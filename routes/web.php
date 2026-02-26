@@ -10,69 +10,68 @@ Route::get('/pay/{reference}', function ($reference) {
     return view('pay', ['payment' => $payment]);
 });
 
-Route::post('/pay/submit', function (\Illuminate\Http\Request $request, \App\Services\PaymentService $paymentService) {
-    // Validate request
+Route::post('/pay/submit', function (\Illuminate\Http\Request $request) {
     $data = $request->validate([
         'payment_reference' => 'required|string|exists:payments,reference',
-        'card_number' => 'required|string',
-        'exp_month' => 'required|string|size:2',
-        'exp_year' => 'required|string|size:2',
-        'cvc' => 'required|string|min:3|max:4',
+        'card_number'       => 'required|string',
+        'exp_month'         => 'required|string|size:2',
+        'exp_year'          => 'required|string|size:2',
+        'cvc'               => 'required|string|min:3|max:4',
     ]);
 
     $payment = \App\Models\Payment::where('reference', $request->payment_reference)->firstOrFail();
 
-    // Check status - Allow retry if failed
     if (!in_array($payment->status, ['initialized', 'failed'])) {
         return response()->json(['error' => 'Payment already processed'], 400);
     }
 
-    // Process
-    $result = $paymentService->processPayment($payment, [
+    // ── Dispatch to queue — returns instantly ────────────────────────
+    \App\Jobs\ProcessCardPayment::dispatch($payment, [
         'card_number' => $request->card_number,
-        'exp_month' => $request->exp_month,
-        'exp_year' => $request->exp_year,
-        'cvc' => $request->cvc,
-    ]);
+        'exp_month'   => $request->exp_month,
+        'exp_year'    => $request->exp_year,
+        'cvc'         => $request->cvc,
+    ])->onQueue('payments');
 
-    if ($result['success']) {
-        return response()->json(['success' => true, 'payment' => $result['payment']]);
-    } else {
-        return response()->json(['success' => false, 'error' => $result['error']], 400);
-    }
+    // Immediately mark as processing so the UI can start polling
+    $payment->update(['status' => 'pending']);
+
+    return response()->json([
+        'success' => true,
+        'status'  => 'processing',
+        'message' => 'Payment is being processed. Please wait…',
+        'payment' => $payment->fresh(),
+    ]);
 });
 
-Route::post('/pay/submit-mobile-money', function (\Illuminate\Http\Request $request, \App\Services\PaymentService $paymentService) {
-    // Validate request
+Route::post('/pay/submit-mobile-money', function (\Illuminate\Http\Request $request) {
     $request->validate([
         'payment_reference' => 'required|string|exists:payments,reference',
-        'phone_number' => 'required|string',
-        'provider' => 'required|string|in:mtn,airtel,zamtel',
+        'phone_number'      => 'required|string',
+        'provider'          => 'required|string|in:mtn,airtel,zamtel',
     ]);
 
     $payment = \App\Models\Payment::where('reference', $request->payment_reference)->firstOrFail();
 
-    // Check status - Allow retry if failed
     if (!in_array($payment->status, ['initialized', 'failed'])) {
         return response()->json(['error' => 'Payment already processed'], 400);
     }
 
-    // Process
-    $result = $paymentService->processMobileMoneyPayment($payment, [
-        'phone_number' => $request->phone_number,
-        'provider' => $request->provider,
-    ]);
+    // ── Dispatch to queue — returns instantly ────────────────────────
+    \App\Jobs\ProcessMobileMoneyPayment::dispatch(
+        $payment,
+        $request->phone_number,
+        $request->provider,
+    )->onQueue('payments');
 
-    if ($result['success']) {
-        return response()->json([
-            'success' => true,
-            'payment' => $result['payment'],
-            'message' => $result['message'],
-            'status' => $result['status']
-        ]);
-    } else {
-        return response()->json(['success' => false, 'error' => $result['error']], 400);
-    }
+    $payment->update(['status' => 'pending']);
+
+    return response()->json([
+        'success' => true,
+        'status'  => 'pay-offline',
+        'message' => 'Please authorise the payment on your phone.',
+        'payment' => $payment->fresh(),
+    ]);
 });
 
 Route::get('/pay/status/{reference}', function ($reference, \App\Services\PaymentService $paymentService) {

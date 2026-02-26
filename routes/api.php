@@ -57,6 +57,24 @@ Route::middleware(['auth.apikey', 'throttle:60,1', 'idempotency', 'secure.header
     // Dashboard routes
     Route::get('/dashboard/stats', [App\Http\Controllers\Api\DashboardController::class, 'stats']);
 
+    // ── App Management ──────────────────────────────────────────────────────────
+    // Merchants register and manage "Apps" (internal or external products)
+    Route::prefix('apps')->group(function () {
+        Route::get('/',    [App\Http\Controllers\Api\AppController::class, 'index']);   // list apps
+        Route::post('/',   [App\Http\Controllers\Api\AppController::class, 'store']);   // create app
+        Route::get('/{appId}',    [App\Http\Controllers\Api\AppController::class, 'show']);    // show app
+        Route::put('/{appId}',    [App\Http\Controllers\Api\AppController::class, 'update']);  // update app
+        Route::delete('/{appId}', [App\Http\Controllers\Api\AppController::class, 'destroy']); // suspend app
+
+        // App users
+        Route::get('/{appId}/users',              [App\Http\Controllers\Api\AppController::class, 'users']);     // list users
+        Route::get('/{appId}/users/{externalId}', [App\Http\Controllers\Api\AppController::class, 'showUser']);  // show user
+
+        // App payments
+        Route::post('/{appId}/payments/initialize', [App\Http\Controllers\Api\AppPaymentController::class, 'initialize']); // init payment
+        Route::get('/{appId}/payments',             [App\Http\Controllers\Api\AppPaymentController::class, 'index']);      // list payments
+    });
+
     // Admin Routes
     Route::middleware(['admin'])->prefix('admin')->group(function () {
         Route::get('/merchants', [App\Http\Controllers\Api\Admin\MerchantController::class, 'index']);

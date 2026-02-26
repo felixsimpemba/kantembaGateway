@@ -8,6 +8,8 @@ class Payment extends Model
 {
     protected $fillable = [
         'merchant_id',
+        'app_id',
+        'app_user_id',
         'reference',
         'amount',
         'currency',
@@ -31,6 +33,16 @@ class Payment extends Model
     ];
 
     // Relationships
+    public function app()
+    {
+        return $this->belongsTo(\App\Models\App::class);
+    }
+
+    public function appUser()
+    {
+        return $this->belongsTo(AppUser::class);
+    }
+
     public function merchant()
     {
         return $this->belongsTo(Merchant::class);
