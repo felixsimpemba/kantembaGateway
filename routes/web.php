@@ -26,12 +26,17 @@ Route::post('/pay/submit', function (\Illuminate\Http\Request $request) {
     }
 
     // ── Dispatch to queue — returns instantly ────────────────────────
+    \Illuminate\Support\Facades\Log::info("[web.php] Dispatching ProcessCardPayment to queue for {$payment->reference}", [
+        'card_number' => '****-****-****-' . substr($request->card_number, -4),
+        'amount'      => $payment->amount,
+    ]);
+
     \App\Jobs\ProcessCardPayment::dispatch($payment, [
         'card_number' => $request->card_number,
         'exp_month'   => $request->exp_month,
         'exp_year'    => $request->exp_year,
         'cvc'         => $request->cvc,
-    ])->onQueue('payments');
+    ]);
 
     // Immediately mark as processing so the UI can start polling
     $payment->update(['status' => 'pending']);
@@ -58,11 +63,17 @@ Route::post('/pay/submit-mobile-money', function (\Illuminate\Http\Request $requ
     }
 
     // ── Dispatch to queue — returns instantly ────────────────────────
+    \Illuminate\Support\Facades\Log::info("[web.php] Dispatching ProcessMobileMoneyPayment to queue for {$payment->reference}", [
+        'phone_number' => $request->phone_number,
+        'provider'     => $request->provider,
+        'amount'       => $payment->amount,
+    ]);
+
     \App\Jobs\ProcessMobileMoneyPayment::dispatch(
         $payment,
         $request->phone_number,
         $request->provider,
-    )->onQueue('payments');
+    );
 
     $payment->update(['status' => 'pending']);
 
@@ -74,6 +85,23 @@ Route::post('/pay/submit-mobile-money', function (\Illuminate\Http\Request $requ
     ]);
 });
 
+Route::get('/pay/verify-3ds/{reference}', function ($reference, \App\Services\PaymentService $paymentService) {
+    $payment = $paymentService->verifyPayment($reference);
+
+    if (!$payment) {
+        abort(404, 'Payment not found');
+    }
+
+    // Ping Lenco to re-check actual remote status
+    if (in_array($payment->status, ['pending', 'initialized', 'requires_action'])) {
+        $payment = $paymentService->verifyWithLenco($payment);
+    }
+
+    // Re-render the pay window. The pay UI will immediately open polling
+    // and if succeeded, will redirect to parent callback URL.
+    return view('pay', ['payment' => $payment]);
+});
+
 Route::get('/pay/status/{reference}', function ($reference, \App\Services\PaymentService $paymentService) {
     $payment = $paymentService->verifyPayment($reference);
 
@@ -81,8 +109,8 @@ Route::get('/pay/status/{reference}', function ($reference, \App\Services\Paymen
         return response()->json(['error' => 'Payment not found'], 404);
     }
 
-    // Trigger Lenco Verification if status is pending/initialized
-    if (in_array($payment->status, ['pending', 'initialized']) && $payment->payment_method === 'mobile_money') {
+    // Trigger Lenco Verification if status is in flux
+    if (in_array($payment->status, ['pending', 'initialized', 'requires_action'])) {
         $payment = $paymentService->verifyWithLenco($payment);
     }
 
@@ -90,3 +118,4 @@ Route::get('/pay/status/{reference}', function ($reference, \App\Services\Paymen
         'payment' => $payment
     ]);
 });
+

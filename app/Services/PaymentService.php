@@ -365,6 +365,22 @@ class PaymentService
 
                 // Dispatch Webhook
                 $this->webhookService->dispatch($payment->merchant, 'payment.succeeded', $payment->fresh()->toArray());
+
+                // ── App confirmation callback ─────────────────────────────
+                $freshPayment = $payment->fresh();
+                $app = $freshPayment->app;
+                if ($app) {
+                    if ($app->confirmation_url) {
+                        \Illuminate\Support\Facades\Log::info("[PaymentService] Dispatching SendAppConfirmation to {$app->confirmation_url} for {$freshPayment->reference}");
+                        \App\Jobs\SendAppConfirmation::dispatch(
+                            $freshPayment,
+                            $app->confirmation_url,
+                            $app->app_secret,
+                        );
+                    } else {
+                        \Illuminate\Support\Facades\Log::info("[PaymentService] App {$app->app_id} has NO confirmation_url set. Skipping confirmation.");
+                    }
+                }
             } elseif (($data['status'] ?? '') === 'failed') {
                 $payment->update([
                     'status' => 'failed',

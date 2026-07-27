@@ -7,11 +7,545 @@
     },
     "servers": [
         {
-            "url": "http://localhost:8000",
-            "description": "Local Development Server"
+            "url": "/",
+            "description": "Current Host"
         }
     ],
     "paths": {
+        "/api/apps": {
+            "get": {
+                "tags": [
+                    "Apps"
+                ],
+                "summary": "List all apps",
+                "description": "List all apps belonging to the authenticated merchant.",
+                "operationId": "5f123a8d32dc3e5b9403bc19aac48205",
+                "responses": {
+                    "200": {
+                        "description": "List of apps retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "apps": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "apiKey": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Apps"
+                ],
+                "summary": "Create a new app",
+                "description": "Create a new app for the authenticated merchant.",
+                "operationId": "5eeae569d2320af41d900cc34c1ab0a0",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Mobile Storefront"
+                                    },
+                                    "webhook_url": {
+                                        "type": "string",
+                                        "example": "https://example.com/webhook"
+                                    },
+                                    "confirmation_url": {
+                                        "type": "string",
+                                        "example": "https://example.com/confirm"
+                                    },
+                                    "metadata": {
+                                        "type": "object",
+                                        "example": {
+                                            "platform": "ios"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "App created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "app": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "apiKey": []
+                    }
+                ]
+            }
+        },
+        "/api/apps/{appId}": {
+            "get": {
+                "tags": [
+                    "Apps"
+                ],
+                "summary": "Show app details",
+                "description": "Show a single app (must belong to merchant).",
+                "operationId": "e7ede94aefa5479431878d6a69026787",
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "App details retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "app": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "App not found"
+                    }
+                },
+                "security": [
+                    {
+                        "apiKey": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Apps"
+                ],
+                "summary": "Update app settings",
+                "description": "Update app settings.",
+                "operationId": "25ca726f11c7e02250dc58ec7a22c620",
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Web Storefront"
+                                    },
+                                    "webhook_url": {
+                                        "type": "string",
+                                        "example": "https://example.com/new-webhook"
+                                    },
+                                    "confirmation_url": {
+                                        "type": "string",
+                                        "example": "https://example.com/new-confirm"
+                                    },
+                                    "metadata": {
+                                        "type": "object",
+                                        "example": {
+                                            "platform": "web"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "App updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "app": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "App not found"
+                    }
+                },
+                "security": [
+                    {
+                        "apiKey": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Apps"
+                ],
+                "summary": "Suspend an app",
+                "description": "Suspend / deactivate an app (soft-disable without deletion).",
+                "operationId": "4711b28f3587e7f4ff719d2c1da394ee",
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "App suspended successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "App not found"
+                    }
+                },
+                "security": [
+                    {
+                        "apiKey": []
+                    }
+                ]
+            }
+        },
+        "/api/apps/{appId}/users": {
+            "get": {
+                "tags": [
+                    "Apps"
+                ],
+                "summary": "List app users",
+                "description": "List users registered under a specific app.",
+                "operationId": "09ed55cfa2534e0e932ee5072404914c",
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of users retrieved successfully"
+                    },
+                    "404": {
+                        "description": "App not found"
+                    }
+                },
+                "security": [
+                    {
+                        "apiKey": []
+                    }
+                ]
+            }
+        },
+        "/api/apps/{appId}/users/{externalUserId}": {
+            "get": {
+                "tags": [
+                    "Apps"
+                ],
+                "summary": "Show app user details",
+                "description": "Show a single app user by external_user_id.",
+                "operationId": "2951ef27719ca3ad95f0e446a6a01820",
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "externalUserId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User details retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "user": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "App or user not found"
+                    }
+                },
+                "security": [
+                    {
+                        "apiKey": []
+                    }
+                ]
+            }
+        },
+        "/api/apps/{appId}/payments/initialize": {
+            "post": {
+                "tags": [
+                    "App Payments"
+                ],
+                "summary": "Initialize an app payment",
+                "description": "Initialize a payment on behalf of an app + an app user.",
+                "operationId": "9286f9e465d36c6dca8226f0e70d2b69",
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "amount",
+                                    "currency",
+                                    "app_user"
+                                ],
+                                "properties": {
+                                    "amount": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 250
+                                    },
+                                    "currency": {
+                                        "type": "string",
+                                        "example": "ZMW"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Top-up"
+                                    },
+                                    "callback_url": {
+                                        "type": "string",
+                                        "example": "https://yourapp.com/callback"
+                                    },
+                                    "app_user": {
+                                        "required": [
+                                            "external_user_id"
+                                        ],
+                                        "properties": {
+                                            "external_user_id": {
+                                                "type": "string",
+                                                "example": "user_42"
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "example": "Jane Doe"
+                                            },
+                                            "email": {
+                                                "type": "string",
+                                                "example": "jane@example.com"
+                                            },
+                                            "phone": {
+                                                "type": "string",
+                                                "example": "260970000000"
+                                            }
+                                        },
+                                        "type": "object"
+                                    },
+                                    "metadata": {
+                                        "type": "object",
+                                        "example": {
+                                            "order_id": "123"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Payment initialized successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "reference": {
+                                            "type": "string"
+                                        },
+                                        "pay_url": {
+                                            "type": "string"
+                                        },
+                                        "amount": {
+                                            "type": "number",
+                                            "format": "float"
+                                        },
+                                        "currency": {
+                                            "type": "string"
+                                        },
+                                        "status": {
+                                            "type": "string"
+                                        },
+                                        "app_user": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "apiKey": []
+                    }
+                ]
+            }
+        },
+        "/api/apps/{appId}/payments": {
+            "get": {
+                "tags": [
+                    "App Payments"
+                ],
+                "summary": "List app payments",
+                "description": "List all payments for a specific app.",
+                "operationId": "5157bbc4b58fe95153e2ea3541df560a",
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "external_user_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of payments retrieved successfully"
+                    },
+                    "404": {
+                        "description": "App not found"
+                    }
+                },
+                "security": [
+                    {
+                        "apiKey": []
+                    }
+                ]
+            }
+        },
         "/api/auth/register": {
             "post": {
                 "tags": [
@@ -27,6 +561,7 @@
                                 "required": [
                                     "name",
                                     "email",
+                                    "password",
                                     "business_name"
                                 ],
                                 "properties": {
@@ -38,6 +573,11 @@
                                         "type": "string",
                                         "format": "email",
                                         "example": "john@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "password123"
                                     },
                                     "business_name": {
                                         "type": "string",
@@ -84,6 +624,73 @@
                     },
                     "422": {
                         "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/auth/login": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Login as a merchant",
+                "operationId": "dd51a484b7fa0f97c7680fdbde14cf5f",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "john@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "password123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login successful",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Login successful"
+                                        },
+                                        "merchant": {
+                                            "type": "object"
+                                        },
+                                        "api_key": {
+                                            "type": "string",
+                                            "example": "pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                                        },
+                                        "warning": {
+                                            "type": "string",
+                                            "example": "Use this API key for authentication."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials"
                     }
                 }
             }
@@ -176,6 +783,46 @@
                     },
                     "401": {
                         "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "apiKey": []
+                    }
+                ]
+            }
+        },
+        "/api/dashboard/stats": {
+            "get": {
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Get dashboard statistics",
+                "operationId": "654e1617f74d2b9e0654ec77620d960b",
+                "responses": {
+                    "200": {
+                        "description": "Dashboard stats retrieved",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "total_success": {
+                                            "type": "integer"
+                                        },
+                                        "total_failed": {
+                                            "type": "integer"
+                                        },
+                                        "failed_24h": {
+                                            "type": "integer"
+                                        },
+                                        "volume_24h": {
+                                            "type": "number"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -345,6 +992,84 @@
                 ]
             }
         },
+        "/api/payments/process-mobile-money": {
+            "post": {
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Process a mobile money payment",
+                "operationId": "54453c2fc7399de89ee2790fe989881e",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "payment_reference",
+                                    "phone_number",
+                                    "provider"
+                                ],
+                                "properties": {
+                                    "payment_reference": {
+                                        "type": "string",
+                                        "example": "pay_xxxxxxxxxxxxxxxxxxxx"
+                                    },
+                                    "phone_number": {
+                                        "type": "string",
+                                        "example": "260970000000"
+                                    },
+                                    "provider": {
+                                        "type": "string",
+                                        "enum": [
+                                            "mtn",
+                                            "airtel",
+                                            "zamtel"
+                                        ],
+                                        "example": "mtn"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Payment initiated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "payment": {
+                                            "type": "object"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "status": {
+                                            "type": "string",
+                                            "example": "pay-offline"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Payment processing failed"
+                    }
+                },
+                "security": [
+                    {
+                        "apiKey": []
+                    }
+                ]
+            }
+        },
         "/api/payments/{reference}": {
             "get": {
                 "tags": [
@@ -396,6 +1121,18 @@
                 ],
                 "summary": "Create a refund for a payment",
                 "operationId": "911179725792cdb668d36cfec3625908",
+                "parameters": [
+                    {
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "description": "Unique key to prevent duplicate refunds",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "unique-key-123"
+                        }
+                    }
+                ],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -590,8 +1327,20 @@
     },
     "tags": [
         {
+            "name": "Apps",
+            "description": "API Endpoints for managing Merchant Apps"
+        },
+        {
+            "name": "App Payments",
+            "description": "API Endpoints for initializing and listing app-based payments"
+        },
+        {
             "name": "Authentication",
             "description": "Authentication"
+        },
+        {
+            "name": "Dashboard",
+            "description": "Dashboard"
         },
         {
             "name": "Payments",

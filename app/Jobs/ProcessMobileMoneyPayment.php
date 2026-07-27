@@ -35,8 +35,8 @@ class ProcessMobileMoneyPayment implements ShouldQueue
 
         $payment = $this->payment->fresh();
 
-        // Guard: skip if already processed
-        if (!in_array($payment->status, ['initialized', 'failed'])) {
+        // Guard: skip if already processed (completed)
+        if (!in_array($payment->status, ['initialized', 'pending', 'failed'])) {
             Log::info("[ProcessMobileMoneyPayment] Skipping — status: {$payment->status}");
             return;
         }

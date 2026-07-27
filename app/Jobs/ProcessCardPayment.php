@@ -45,8 +45,8 @@ class ProcessCardPayment implements ShouldQueue
         // Re-fetch to get current state (avoids stale model from queue serialisation)
         $payment = $this->payment->fresh();
 
-        // Guard: skip if already processed
-        if (!in_array($payment->status, ['initialized', 'failed'])) {
+        // Guard: skip if already processed (completed)
+        if (!in_array($payment->status, ['initialized', 'pending', 'failed'])) {
             Log::info("[ProcessCardPayment] Skipping — already in status: {$payment->status}");
             return;
         }
@@ -91,6 +91,22 @@ class ProcessCardPayment implements ShouldQueue
         ]);
 
         $webhookService->dispatch($merchant, 'payment.succeeded', $payment->fresh()->toArray());
+
+        // ── App confirmation callback ─────────────────────────────────
+        // If this payment was made via a registered App, hit that app's confirmation URL
+        $app = $payment->fresh()->app;
+        if ($app) {
+            if ($app->confirmation_url) {
+                Log::info("[ProcessCardPayment] Dispatching SendAppConfirmation to {$app->confirmation_url} for {$payment->reference}");
+                \App\Jobs\SendAppConfirmation::dispatch(
+                    $payment->fresh(),
+                    $app->confirmation_url,
+                    $app->app_secret,
+                );
+            } else {
+                Log::info("[ProcessCardPayment] App {$app->app_id} has NO confirmation_url set. Skipping confirmation.");
+            }
+        }
 
         Log::info("[ProcessCardPayment] Succeeded: {$payment->reference}");
     }

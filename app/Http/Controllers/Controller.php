@@ -10,8 +10,8 @@ use OpenApi\Attributes as OA;
     description: "Payment Gateway API for processing payments, managing refunds, and handling webhooks"
 )]
 #[OA\Server(
-    url: "http://localhost:8000",
-    description: "Local Development Server"
+    url: "/",
+    description: "Current Host"
 )]
 #[OA\SecurityScheme(
     securityScheme: "apiKey",

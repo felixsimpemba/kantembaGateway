@@ -14,6 +14,7 @@ class App extends Model
         'app_secret',
         'status',
         'webhook_url',
+        'confirmation_url',
         'metadata',
     ];
 
